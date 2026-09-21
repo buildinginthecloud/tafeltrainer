@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Tafeltrainer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#141034">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c5cff'/%3E%3Ctext x='32' y='45' font-size='34' text-anchor='middle' fill='%23ffd166' font-family='sans-serif' font-weight='bold'%3E%C3%97%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #141034;
+  --card: #221c4a;
+  --card-2: #2c2560;
+  --line: #3b3378;
+  --text: #f5f3ff;
+  --muted: #a9a0d8;
+  --primary: #7c5cff;
+  --primary-dark: #5b3fd6;
+  --accent: #ffd166;
+  --good: #4ade80;
+  --bad: #f87171;
+  --radius: 18px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  background: var(--bg);
+  background-image:
+    radial-gradient(60vw 40vw at 12% 0%, rgba(124, 92, 255, .35), transparent 60%),
+    radial-gradient(50vw 40vw at 90% 100%, rgba(255, 209, 102, .16), transparent 60%);
+  background-attachment: fixed;
+  color: var(--text);
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+
+.app {
+  height: 100vh;
+  height: 100dvh;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);
+}
+.screen { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 14px; }
+.screen.active { display: flex; }
+.scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding-bottom: 4px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+h1 { font-size: 30px; letter-spacing: -.5px; }
+h2 { font-size: 19px; margin-bottom: 10px; }
+.row { display: flex; align-items: center; gap: 12px; }
+.spread { justify-content: space-between; }
+
+/* kop met niveau en reeks */
+.topbar { display: flex; align-items: center; gap: 12px; }
+.level-pill { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 15px; white-space: nowrap; }
+.xp-track { flex: 1; height: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.xp-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 999px; transition: width .5s ease; }
+.streak { font-weight: 700; font-size: 15px; white-space: nowrap; }
+
+.note { background: rgba(248, 113, 113, .14); border: 1px solid var(--bad); color: #ffd9d9; border-radius: 14px; padding: 10px 14px; font-size: 14px; }
+
+/* tafelkiezer */
+.tables { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.tables button {
+  aspect-ratio: 1.35;
+  border-radius: 14px;
+  background: var(--card-2);
+  border: 2px solid transparent;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.tables button.on { background: var(--primary); color: #fff; border-color: var(--accent); }
+
+.mix-tile {
+  width: 100%; margin-top: 10px; padding: 14px; border-radius: 14px;
+  background: var(--card-2); border: 2px solid transparent;
+  font-size: 17px; font-weight: 800; color: var(--muted); text-align: center;
+}
+.mix-tile.on { background: var(--primary); color: #fff; border-color: var(--accent); }
+#mixHint { margin-top: 10px; }
+
+.btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  width: 100%; padding: 16px 20px; border-radius: var(--radius);
+  background: var(--card-2); border: 1px solid var(--line);
+  font-size: 20px; font-weight: 800; text-align: left;
+}
+.btn .sub { font-size: 14px; font-weight: 500; color: var(--muted); }
+.btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-color: var(--primary); }
+.btn.primary .sub { color: rgba(255, 255, 255, .8); }
+.btn:active { transform: scale(.985); }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.switch { width: 58px; height: 34px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: var(--muted); transition: .2s; }
+.switch.on { background: var(--primary); border-color: var(--primary); }
+.switch.on::after { left: 27px; background: #fff; }
+
+/* toets */
+.quiz-top { display: flex; align-items: center; gap: 12px; }
+.clock { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 96px; }
+.clock.warn { color: var(--accent); }
+.clock.hurry { color: var(--bad); }
+.counter { font-size: 15px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.quit { padding: 9px 16px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 15px; font-weight: 700; color: var(--muted); }
+.progress { height: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .2s ease; }
+
+.quiz-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+.sum { font-size: clamp(48px, 11vw, 88px); font-weight: 800; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+.answer {
+  min-width: 190px; padding: 10px 26px; border-radius: 16px;
+  background: var(--card); border: 3px solid var(--line);
+  font-size: clamp(40px, 9vw, 64px); font-weight: 800; text-align: center;
+  font-variant-numeric: tabular-nums; min-height: 1.5em;
+}
+.answer.good { border-color: var(--good); background: rgba(74, 222, 128, .18); color: var(--good); }
+.answer.bad { border-color: var(--bad); background: rgba(248, 113, 113, .18); color: var(--bad); }
+.verdict { font-size: 34px; height: 40px; }
+
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 380px; margin: 0 auto; }
+.keypad button {
+  height: clamp(56px, 8.5vh, 84px);
+  border-radius: 16px; background: var(--card-2); border: 1px solid var(--line);
+  font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.keypad button:active { background: var(--primary); }
+.keypad .ok { background: var(--good); color: #10331f; }
+.keypad .del { background: var(--card); color: var(--muted); font-size: 24px; }
+
+/* uitslag */
+.score-big { font-size: 68px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.stars { font-size: 40px; letter-spacing: 6px; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.fact { background: var(--card-2); border-radius: 14px; padding: 12px; text-align: center; }
+.fact .v { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fact .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mistakes { display: flex; flex-wrap: wrap; gap: 8px; }
+.mistake { background: var(--card-2); border-radius: 12px; padding: 8px 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.mistake s { color: var(--bad); text-decoration-thickness: 2px; }
+.mistake b { color: var(--good); }
+.badge-pop { display: flex; align-items: center; gap: 12px; background: rgba(255, 209, 102, .14); border: 1px solid var(--accent); border-radius: 14px; padding: 12px 14px; }
+.badge-pop .ic { font-size: 30px; }
+
+/* statistieken */
+.chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+.chart .bar { flex: 1; background: linear-gradient(180deg, var(--primary), var(--primary-dark)); border-radius: 6px 6px 0 0; min-height: 4px; position: relative; }
+.chart .bar span { position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.list-row { display: flex; justify-content: space-between; gap: 10px; background: var(--card-2); border-radius: 12px; padding: 10px 14px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.badges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.badge { background: var(--card-2); border-radius: 14px; padding: 12px 8px; text-align: center; opacity: .3; }
+.badge.earned { opacity: 1; border: 1px solid var(--accent); }
+.badge .ic { font-size: 26px; }
+.badge .nm { font-size: 11px; margin-top: 4px; line-height: 1.25; }
+.tafelgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.tafelgrid div { background: var(--card-2); border-radius: 12px; padding: 10px 4px; text-align: center; font-size: 13px; }
+.tafelgrid div b { display: block; font-size: 17px; }
+.tafelgrid div.done { background: rgba(74, 222, 128, .18); border: 1px solid var(--good); }
+.link { color: var(--muted); text-decoration: underline; font-size: 14px; padding: 8px 0; align-self: center; }
+
+/* liggend op een tablet: som links, toetsenbord rechts, korter reiken */
+@media (orientation: landscape) and (min-width: 700px) and (min-height: 500px) {
+  .app { max-width: 1040px; }
+  .quiz-body { flex-direction: row; align-items: center; gap: 32px; }
+  .quiz-body .stage { flex: 1; }
+  .quiz-body .keypad { flex: 0 0 400px; width: 400px; max-width: 400px; margin: 0; }
+  .quiz-body .keypad button { height: clamp(64px, 12vh, 94px); }
+}
+
+/* confetti */
+#confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
+#confetti i { position: absolute; top: -20px; width: 10px; height: 16px; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: .2; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== startscherm ===== -->
+  <section id="scr-home" class="screen active">
+    <div class="topbar">
+      <div class="level-pill" id="levelPill">Niveau 1</div>
+      <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+      <div class="streak" id="streakBox">🔥 0</div>
+    </div>
+    <div class="scroll">
+      <div id="storageNote" class="note" hidden>Let op: deze iPad bewaart de scores niet. Alles werkt wel, maar na het sluiten begint de teller opnieuw.</div>
+
+      <div>
+        <h1>Tafeltrainer</h1>
+        <p class="muted small" style="margin-top:4px" id="homeSub">Kies een tafel en ga los.</p>
+      </div>
+
+      <div class="card">
+        <h2 id="tableHeading">Welke tafel?</h2>
+        <div class="tables" id="tableGrid"></div>
+        <button class="mix-tile" id="mixTile">Mix van meerdere tafels</button>
+        <div class="muted small" id="mixHint" hidden>Tik de tafels aan die mee mogen doen. Er moeten er minstens twee aan staan.</div>
+      </div>
+
+      <button class="btn primary" id="btnExam">
+        Examen
+        <span class="sub">100 sommen in 8 minuten, net als op school</span>
+      </button>
+      <button class="btn" id="btnSprint">
+        Sprint
+        <span class="sub">20 sommen zo snel als je kunt, verbeter je record</span>
+      </button>
+      <button class="btn" id="btnStats">
+        Statistieken
+        <span class="sub">Je scores, records en medailles</span>
+      </button>
+
+      <div class="card toggle">
+        <div>
+          <div style="font-weight:700">Ook omgekeerd</div>
+          <div class="muted small">Dan komt 7 × 6 ook voorbij, niet alleen 6 × 7.</div>
+        </div>
+        <div class="switch" id="revSwitch" role="switch" tabindex="0"></div>
+      </div>
+
+      <div class="card" id="homeRecords"></div>
+    </div>
+  </section>
+
+  <!-- ===== toets ===== -->
+  <section id="scr-quiz" class="screen">
+    <div class="quiz-top">
+      <div class="clock" id="clock">8:00</div>
+      <div class="counter" id="counter">1 / 100</div>
+      <div style="flex:1"></div>
+      <button class="quit" id="btnQuit">Stoppen</button>
+    </div>
+    <div class="progress"><div id="progBar"></div></div>
+    <div class="quiz-body">
+      <div class="stage">
+        <div class="sum" id="sum">6 × 7</div>
+        <div class="answer" id="answerBox">&nbsp;</div>
+        <div class="verdict" id="verdict">&nbsp;</div>
+      </div>
+      <div class="keypad" id="keypad"></div>
+    </div>
+  </section>
+
+  <!-- ===== uitslag ===== -->
+  <section id="scr-result" class="screen">
+    <div class="scroll" id="resultBody"></div>
+    <button class="btn primary" id="btnAgain">Nog een keer</button>
+    <button class="link" id="btnHome">Terug naar het begin</button>
+  </section>
+
+  <!-- ===== statistieken ===== -->
+  <section id="scr-stats" class="screen">
+    <div class="scroll" id="statsBody"></div>
+    <button class="btn primary" id="btnStatsBack">Terug</button>
+  </section>
+
+</div>
+<div id="confetti"></div>
+
+<script>
+"use strict";
+
+/* ============ opslag ============ */
+const STORE_KEY = "tafeltrainer.v1";
+const XP_PER_LEVEL = 150;
+let storageWorks = true;
+
+function defaultState() {
+  return { xp: 0, badges: {}, streak: { last: null, days: 0 }, reverse: false,
+           table: 6, mix: false, mixTables: [6, 7], tables: {}, sums: {} };
+}
+
+function loadState() {
+  try {
+    localStorage.setItem(STORE_KEY + ".test", "1");
+    localStorage.removeItem(STORE_KEY + ".test");
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultState();
+    return sanitize(Object.assign(defaultState(), JSON.parse(raw)));
+  } catch (e) {
+    storageWorks = false;
+    return defaultState();
+  }
+}
+
+// een opslag van een oudere versie of een halve schrijfactie mag de app niet slopen
+function sanitize(st) {
+  const valid = Array.isArray(st.mixTables)
+    ? st.mixTables.filter((n) => Number.isInteger(n) && n >= 1 && n <= 10)
+    : [];
+  st.mixTables = valid.length >= 2 ? valid : [6, 7];
+  if (!Number.isInteger(st.table) || st.table < 1 || st.table > 10) st.table = 6;
+  return st;
+}
+
+function saveState() {
+  if (!storageWorks) return;
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+    storageWorks = false;
+    document.getElementById("storageNote").hidden = false;
+  }
+}
+
+let state = loadState();
+
+function tableStats(n) {
+  if (!state.tables[n]) state.tables[n] = { best: 0, bestMs: null, sprintBest: null, attempts: [] };
+  return state.tables[n];
+}
+
+// welke tafels doen er nu mee, waar horen de scores, en hoe heet dat
+function activeTables() {
+  return state.mix ? state.mixTables.slice().sort((a, b) => a - b) : [state.table];
+}
+
+function statsKey() {
+  return state.mix ? "mix" : state.table;
+}
+
+function activeLabel() {
+  if (!state.mix) return "Tafel van " + state.table;
+  const t = activeTables();
+  return "Mix van " + t.slice(0, -1).join(", ") + " en " + t[t.length - 1];
+}
+
+function recordSum(table, other, ok, ms) {
+  const key = table + "x" + other;
+  const s = state.sums[key] || (state.sums[key] = { ok: 0, wrong: 0, ms: 0, n: 0 });
+  if (ok) s.ok++; else s.wrong++;
+  s.ms += ms;
+  s.n++;
+}
+
+/* ============ hulpjes ============ */
+const $ = (id) => document.getElementById(id);
+
+function dateKey(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+const todayKey = () => dateKey(new Date());
+
+function clock(ms) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+}
+function secs(ms, digits) {
+  return (ms / 1000).toFixed(digits === undefined ? 1 : digits).replace(".", ",") + " s";
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function level() { return Math.floor(state.xp / XP_PER_LEVEL) + 1; }
+
+function bumpStreak() {
+  const t = todayKey();
+  if (state.streak.last === t) return;
+  const yesterday = dateKey(new Date(Date.now() - 86400000));
+  state.streak.days = state.streak.last === yesterday ? state.streak.days + 1 : 1;
+  state.streak.last = t;
+}
+
+function confetti() {
+  const box = $("confetti");
+  const colors = ["#ffd166", "#7c5cff", "#4ade80", "#f87171", "#67e8f9"];
+  for (let i = 0; i < 70; i++) {
+    const p = document.createElement("i");
+    p.style.left = Math.random() * 100 + "%";
+    p.style.background = colors[i % colors.length];
+    p.style.animationDuration = (1.6 + Math.random() * 1.4) + "s";
+    p.style.animationDelay = (Math.random() * 0.6) + "s";
+    box.appendChild(p);
+  }
+  setTimeout(() => { box.innerHTML = ""; }, 3600);
+}
+
+/* ============ medailles ============ */
+const BADGES = [
+  { id: "eerste",   ic: "🎯", nm: "Eerste examen",  desc: "Je eerste examen afgemaakt" },
+  { id: "perfect",  ic: "💯", nm: "Alles goed",     desc: "100 van de 100 goed" },
+  { id: "snel",     ic: "⚡️", nm: "Bliksemsnel",    desc: "100 sommen binnen 5 minuten" },
+  { id: "sprinter", ic: "🏃", nm: "Sprinter",       desc: "Sprint onder de 45 seconden" },
+  { id: "foutloos", ic: "✨", nm: "Foutloze sprint", desc: "20 van de 20 goed in een sprint" },
+  { id: "reeks3",   ic: "🔥", nm: "3 dagen op rij", desc: "Drie dagen achter elkaar geoefend" },
+  { id: "reeks7",   ic: "🚀", nm: "7 dagen op rij", desc: "Zeven dagen achter elkaar geoefend" },
+  { id: "volhouder", ic: "🏆", nm: "Volhouder",     desc: "Tien examens gedaan" }
+];
+
+function grantBadges(ids) {
+  const fresh = [];
+  ids.forEach((id) => {
+    if (!state.badges[id]) { state.badges[id] = todayKey(); fresh.push(BADGES.find((b) => b.id === id)); }
+  });
+  return fresh.filter(Boolean);
+}
+
+function totalExams() {
+  return Object.values(state.tables).reduce((n, t) => n + t.attempts.length, 0);
+}
+
+/* ============ sommen ============ */
+function buildQuestions(tables, count) {
+  // eerst de vragen zo eerlijk mogelijk over de tafels verdelen, daarna binnen elke
+  // tafel over de tien sommen, zodat geen enkele tafel of som oververtegenwoordigd raakt
+  const order = shuffle(tables.slice());
+  const list = [];
+  order.forEach((t, idx) => {
+    const share = Math.floor(count / order.length) + (idx < count % order.length ? 1 : 0);
+    const pool = [];
+    while (pool.length < share) pool.push.apply(pool, shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
+    pool.length = share;
+    pool.forEach((n) => list.push({ t: t, n: n }));
+  });
+  shuffle(list);
+
+  // dezelfde som twee keer achter elkaar is verwarrend, dus die ruilen we weg met
+  // een willekeurige andere plek waar beide sommen wel passen
+  const same = (x, y) => x.t === y.t && x.n === y.n;
+  const fits = (q, k) => (k <= 0 || !same(list[k - 1], q)) && (k + 1 >= list.length || !same(list[k + 1], q));
+  for (let pass = 0; pass < 5; pass++) {
+    let clashes = 0;
+    for (let i = 1; i < list.length; i++) {
+      if (!same(list[i], list[i - 1])) continue;
+      const start = Math.floor(Math.random() * list.length);
+      let swapped = false;
+      for (let k = 0; k < list.length && !swapped; k++) {
+        const j = (start + k) % list.length;
+        if (j === i || j === i - 1) continue;
+        if (fits(list[j], i) && fits(list[i], j)) {
+          const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+          swapped = true;
+        }
+      }
+      if (!swapped) clashes++;
+    }
+    if (clashes === 0) break;
+  }
+
+  return list.map((p) => {
+    const flip = state.reverse && Math.random() < 0.5;
+    return { a: flip ? p.n : p.t, b: flip ? p.t : p.n, table: p.t, other: p.n, answer: p.t * p.n };
+  });
+}
+
+/* ============ schermen ============ */
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $("scr-" + name).classList.add("active");
+}
+
+function renderHome() {
+  const lv = level();
+  $("levelPill").textContent = "Niveau " + lv;
+  $("xpFill").style.width = ((state.xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100) + "%";
+  $("streakBox").textContent = "🔥 " + state.streak.days;
+  $("storageNote").hidden = storageWorks;
+  $("revSwitch").classList.toggle("on", state.reverse);
+
+  $("mixTile").classList.toggle("on", state.mix);
+  $("mixHint").hidden = !state.mix;
+  $("tableHeading").textContent = state.mix ? "Welke tafels doen mee?" : "Welke tafel?";
+  $("homeSub").textContent = state.mix ? "Kies je tafels en ga los." : "Kies een tafel en ga los.";
+
+  const grid = $("tableGrid");
+  grid.innerHTML = "";
+  for (let n = 1; n <= 10; n++) {
+    const b = document.createElement("button");
+    b.textContent = n;
+    b.className = (state.mix ? state.mixTables.indexOf(n) !== -1 : n === state.table) ? "on" : "";
+    b.addEventListener("click", () => { pickTable(n); });
+    grid.appendChild(b);
+  }
+
+  const st = tableStats(statsKey());
+  const last = st.attempts[st.attempts.length - 1];
+  $("homeRecords").innerHTML =
+    "<h2>" + activeLabel() + "</h2>" +
+    '<div class="facts">' +
+      '<div class="fact"><div class="v">' + (st.best || "-") + '</div><div class="l">beste examen</div></div>' +
+      '<div class="fact"><div class="v">' + (st.sprintBest ? secs(st.sprintBest) : "-") + '</div><div class="l">sprintrecord</div></div>' +
+      '<div class="fact"><div class="v">' + (last ? last.c : "-") + '</div><div class="l">vorige keer</div></div>' +
+    "</div>";
+}
+
+// buiten de mix kiest een tik een tafel, binnen de mix zet hij er een aan of uit
+function pickTable(n) {
+  if (!state.mix) {
+    state.table = n;
+  } else {
+    const i = state.mixTables.indexOf(n);
+    if (i === -1) state.mixTables.push(n);
+    else if (state.mixTables.length > 2) state.mixTables.splice(i, 1);
+    else return;   // de laatste twee blijven staan, anders valt er niets te mixen
+  }
+  saveState();
+  renderHome();
+}
+
+/* ============ het spel ============ */
+let run = null;
+let ticker = null;
+const EXAM_MS = 8 * 60 * 1000;
+
+function startRun(mode) {
+  const tables = activeTables();
+  const total = mode === "exam" ? 100 : 20;
+  run = {
+    mode: mode, key: statsKey(), label: activeLabel(), tables: tables, total: total,
+    qs: buildQuestions(tables, total),
+    i: 0, correct: 0, wrong: 0, mistakes: [],
+    buffer: "", locked: false,
+    start: Date.now(), qStart: Date.now()
+  };
+  showScreen("quiz");
+  $("btnQuit").textContent = "Stoppen";
+  renderQuestion();
+  tick();
+  ticker = setInterval(tick, 200);
+}
+
+function tick() {
+  const passed = Date.now() - run.start;
+  const el = $("clock");
+  if (run.mode === "exam") {
+    const left = EXAM_MS - passed;
+    el.textContent = clock(left);
+    el.className = "clock" + (left < 30000 ? " hurry" : left < 90000 ? " warn" : "");
+    if (left <= 0) finish("tijd");
+  } else {
+    el.textContent = clock(passed);
+    el.className = "clock";
+  }
+}
+
+function renderQuestion() {
+  const q = run.qs[run.i];
+  $("sum").textContent = q.a + " × " + q.b;
+  $("counter").textContent = (run.i + 1) + " / " + run.total;
+  $("progBar").style.width = (run.i / run.total * 100) + "%";
+  $("verdict").innerHTML = "&nbsp;";
+  run.qStart = Date.now();
+  renderInput();
+}
+
+function renderInput() {
+  const box = $("answerBox");
+  box.className = "answer";
+  box.textContent = run.buffer === "" ? " " : run.buffer;
+}
+
+function press(d) {
+  if (!run || run.locked || run.buffer.length >= 3) return;
+  run.buffer += d;
+  if (run.buffer.length > 1 && run.buffer[0] === "0") run.buffer = String(Number(run.buffer));
+  renderInput();
+  if (Number(run.buffer) === run.qs[run.i].answer) submit();
+}
+
+function backspace() {
+  if (!run || run.locked) return;
+  run.buffer = run.buffer.slice(0, -1);
+  renderInput();
+}
+
+function submit() {
+  if (!run || run.locked || run.buffer === "") return;
+  const q = run.qs[run.i];
+  const ok = Number(run.buffer) === q.answer;
+  recordSum(q.table, q.other, ok, Date.now() - run.qStart);
+  if (ok) run.correct++; else { run.wrong++; run.mistakes.push({ a: q.a, b: q.b, answer: q.answer, given: run.buffer }); }
+
+  run.locked = true;
+  $("answerBox").className = "answer " + (ok ? "good" : "bad");
+  $("verdict").textContent = ok ? "✅" : "❌";
+
+  setTimeout(() => {
+    if (!run) return;
+    run.i++;
+    run.buffer = "";
+    run.locked = false;
+    if (run.i >= run.total) finish("klaar"); else renderQuestion();
+  }, 260);
+}
+
+function finish(reason) {
+  if (!run) return;
+  clearInterval(ticker);
+  const r = run;
+  run = null;
+  const elapsed = reason === "tijd" ? EXAM_MS : Date.now() - r.start;
+  if (reason === "gestopt" && r.i === 0) { showScreen("home"); renderHome(); return; }
+
+  const st = tableStats(r.key);
+  const result = { mode: r.mode, key: r.key, label: r.label, reason: reason, elapsed: elapsed,
+                   answered: r.i, correct: r.correct, mistakes: r.mistakes, record: false, prev: null };
+  const earned = [];
+
+  if (r.mode === "exam") {
+    result.prev = st.attempts.length ? st.attempts[st.attempts.length - 1].c : null;
+    if (reason !== "gestopt") {
+      result.record = r.correct > st.best;
+      st.best = Math.max(st.best, r.correct);
+      if (reason === "klaar" && (st.bestMs === null || elapsed < st.bestMs)) st.bestMs = elapsed;
+      st.attempts.push({ d: todayKey(), c: r.correct, ms: elapsed, answered: r.i });
+      if (st.attempts.length > 20) st.attempts.shift();
+      earned.push("eerste");
+    }
+    result.xp = r.correct + (reason === "klaar" ? 25 : 0);
+    if (r.correct === 100) earned.push("perfect");
+    if (reason === "klaar" && elapsed < 5 * 60 * 1000) earned.push("snel");
+    if (totalExams() >= 10) earned.push("volhouder");
+  } else {
+    const penalty = r.wrong * 3000;
+    const total = elapsed + penalty;
+    result.penalty = penalty;
+    result.total = total;
+    result.record = reason === "klaar" && (st.sprintBest === null || total < st.sprintBest);
+    if (reason === "klaar" && (st.sprintBest === null || total < st.sprintBest)) st.sprintBest = total;
+    result.xp = r.correct * 2 + (reason === "klaar" ? 10 : 0);
+    if (reason === "klaar" && total < 45000) earned.push("sprinter");
+    if (reason === "klaar" && r.correct === r.total) earned.push("foutloos");
+  }
+
+  state.xp += result.xp;
+  if (reason !== "gestopt") bumpStreak();
+  if (state.streak.days >= 3) earned.push("reeks3");
+  if (state.streak.days >= 7) earned.push("reeks7");
+  result.fresh = grantBadges(earned);
+  saveState();
+
+  renderResult(result);
+  showScreen("result");
+  if (result.record || (result.fresh && result.fresh.length)) confetti();
+}
+
+/* ============ uitslag ============ */
+function stars(correct) {
+  const n = correct >= 95 ? 3 : correct >= 85 ? 2 : correct >= 70 ? 1 : 0;
+  return "⭐️".repeat(n) + "☆".repeat(3 - n);
+}
+
+function verschil(d) {
+  if (d > 0) return d + " beter";
+  if (d < 0) return -d + " minder";
+  return "net zoveel";
+}
+
+function renderResult(r) {
+  let h = "";
+  if (r.mode === "exam") {
+    const perSum = r.answered ? r.elapsed / r.answered : 0;
+    h += '<div class="card" style="text-align:center">' +
+         '<div class="muted small">' + r.label + (r.reason === "tijd" ? " · tijd om" : "") + "</div>" +
+         '<div class="score-big">' + r.correct + '<span class="muted" style="font-size:26px"> / 100</span></div>' +
+         '<div class="stars">' + stars(r.correct) + "</div>" +
+         (r.record ? '<div style="color:var(--accent);font-weight:800;margin-top:8px">🎉 Nieuw record!</div>' : "") +
+         (r.prev !== null ? '<div class="muted small" style="margin-top:8px">Vorige keer: ' + r.prev + " · " + verschil(r.correct - r.prev) + "</div>" : "") +
+         "</div>";
+    h += '<div class="facts">' +
+      '<div class="fact"><div class="v">' + clock(r.elapsed) + '</div><div class="l">tijd</div></div>' +
+      '<div class="fact"><div class="v">' + secs(perSum) + '</div><div class="l">per som</div></div>' +
+      '<div class="fact"><div class="v">+' + r.xp + '</div><div class="l">XP</div></div>' +
+      "</div>";
+    if (r.answered < 100) {
+      h += '<div class="card small muted">Je kwam tot som ' + r.answered + ". " + (100 - r.answered) + " sommen heb je niet meer gehaald.</div>";
+    }
+  } else {
+    h += '<div class="card" style="text-align:center">' +
+         '<div class="muted small">Sprint · ' + r.label + "</div>" +
+         '<div class="score-big">' + secs(r.total) + "</div>" +
+         (r.penalty ? '<div class="muted small">' + secs(r.elapsed) + " + " + secs(r.penalty, 0) + " straftijd</div>" : '<div class="muted small">zonder fouten</div>') +
+         (r.record ? '<div style="color:var(--accent);font-weight:800;margin-top:8px">🎉 Nieuw record!</div>' : "") +
+         "</div>";
+    h += '<div class="facts">' +
+      '<div class="fact"><div class="v">' + r.correct + " / " + r.answered + '</div><div class="l">goed</div></div>' +
+      '<div class="fact"><div class="v">' + (tableStats(r.key).sprintBest ? secs(tableStats(r.key).sprintBest) : "-") + '</div><div class="l">record</div></div>' +
+      '<div class="fact"><div class="v">+' + r.xp + '</div><div class="l">XP</div></div>' +
+      "</div>";
+  }
+
+  if (r.fresh && r.fresh.length) {
+    h += r.fresh.map((b) => '<div class="badge-pop"><div class="ic">' + b.ic + "</div><div><b>" + b.nm + "</b><div class=\"muted small\">" + b.desc + "</div></div></div>").join("");
+  }
+
+  if (r.mistakes.length) {
+    h += '<div class="card"><h2>Deze gingen mis (' + r.mistakes.length + ")</h2>" +
+         '<div class="mistakes">' +
+         r.mistakes.map((m) => '<div class="mistake">' + m.a + " × " + m.b + " = <b>" + m.answer + "</b> <s>" + m.given + "</s></div>").join("") +
+         "</div></div>";
+  } else if (r.answered > 0) {
+    h += '<div class="card" style="text-align:center">Geen enkele fout. Petje af. 🎩</div>';
+  }
+
+  $("resultBody").innerHTML = h;
+  $("btnAgain").textContent = r.mode === "exam" ? "Nog een examen" : "Nog een sprint";
+  $("btnAgain").onclick = () => startRun(r.mode);
+}
+
+/* ============ statistieken ============ */
+function renderStats() {
+  const st = tableStats(statsKey());
+  let h = "<h1>Statistieken</h1>";
+
+  h += '<div class="card"><h2>Tafels gehaald</h2><div class="tafelgrid">';
+  for (let n = 1; n <= 10; n++) {
+    const t = state.tables[n];
+    const best = t ? t.best : 0;
+    h += '<div class="' + (best >= 95 ? "done" : "") + '"><b>' + n + "</b>" + (best ? best : "-") + "</div>";
+  }
+  h += "</div><div class=\"muted small\" style=\"margin-top:8px\">Groen vanaf 95 goed.</div>";
+  const mix = state.tables.mix;
+  if (mix && (mix.best || mix.sprintBest)) {
+    h += '<div class="list" style="margin-top:10px"><div class="list-row"><span>Mix van meerdere tafels</span><span class="muted">' +
+         (mix.best ? "beste " + mix.best : "nog geen examen") +
+         (mix.sprintBest ? " · sprint " + secs(mix.sprintBest) : "") + "</span></div></div>";
+  }
+  h += "</div>";
+
+  h += '<div class="card"><h2>Laatste examens ' + activeLabel().toLowerCase() + "</h2>";
+  if (st.attempts.length) {
+    h += '<div class="chart">' + st.attempts.slice(-10).map((a) =>
+      '<div class="bar" style="height:' + Math.max(4, a.c) + '%"><span>' + a.c + "</span></div>").join("") + "</div>";
+  } else {
+    h += '<div class="muted small">Nog geen examen gedaan voor deze tafel.</div>';
+  }
+  h += "</div>";
+
+  const hard = Object.keys(state.sums)
+    .map((k) => {
+      const s = state.sums[k];
+      const parts = k.split("x");
+      return { table: +parts[0], other: +parts[1], wrong: s.wrong, n: s.n, avg: s.ms / s.n };
+    })
+    .filter((s) => activeTables().indexOf(s.table) !== -1 && s.n >= 2)
+    .sort((a, b) => (b.wrong / b.n - a.wrong / a.n) || (b.avg - a.avg))
+    .slice(0, 5);
+
+  h += '<div class="card"><h2>Jouw lastigste sommen</h2>';
+  h += hard.length
+    ? '<div class="list">' + hard.map((s) =>
+        '<div class="list-row"><span>' + s.table + " × " + s.other + " = <b>" + s.table * s.other + "</b></span><span class=\"muted\">" +
+        s.wrong + " fout · " + secs(s.avg) + "</span></div>").join("") + "</div>"
+    : '<div class="muted small">Nog te weinig geoefend om dit te weten.</div>';
+  h += "</div>";
+
+  h += '<div class="card"><h2>Medailles</h2><div class="badges">' +
+    BADGES.map((b) => '<div class="badge ' + (state.badges[b.id] ? "earned" : "") + '"><div class="ic">' + b.ic + '</div><div class="nm">' + b.nm + "</div></div>").join("") +
+    "</div></div>";
+
+  h += '<button class="link" id="btnReset">Alle scores wissen</button>';
+  $("statsBody").innerHTML = h;
+  $("btnReset").onclick = () => {
+    if (confirm("Weet je het zeker? Alle scores, records en medailles verdwijnen.")) {
+      state = defaultState();
+      saveState();
+      renderHome();
+      showScreen("home");
+    }
+  };
+}
+
+/* ============ knoppen ============ */
+(function buildKeypad() {
+  const pad = $("keypad");
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "ok"];
+  keys.forEach((k) => {
+    const b = document.createElement("button");
+    if (k === "del") { b.className = "del"; b.textContent = "⌫"; b.addEventListener("click", backspace); }
+    else if (k === "ok") { b.className = "ok"; b.textContent = "OK"; b.addEventListener("click", submit); }
+    else { b.textContent = k; b.addEventListener("click", () => press(k)); }
+    pad.appendChild(b);
+  });
+})();
+
+$("btnExam").onclick = () => startRun("exam");
+$("btnSprint").onclick = () => startRun("sprint");
+$("btnStats").onclick = () => { renderStats(); showScreen("stats"); };
+$("btnStatsBack").onclick = () => { renderHome(); showScreen("home"); };
+$("btnHome").onclick = () => { renderHome(); showScreen("home"); };
+$("btnQuit").onclick = () => {
+  if (run && confirm("Wil je stoppen? Je score telt dan tot hier.")) finish("gestopt");
+};
+$("revSwitch").onclick = () => { state.reverse = !state.reverse; saveState(); renderHome(); };
+$("mixTile").onclick = () => { state.mix = !state.mix; saveState(); renderHome(); };
+
+document.addEventListener("keydown", (e) => {
+  if (!run) return;
+  if (e.key >= "0" && e.key <= "9") press(e.key);
+  else if (e.key === "Backspace") backspace();
+  else if (e.key === "Enter") submit();
+});
+
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+
+renderHome();
+</script>
+</body>
+</html>
