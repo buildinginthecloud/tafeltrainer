@@ -18,15 +18,26 @@ geen internet nodig, scores blijven lokaal in de browser.
 
 ## Op de iPad zetten
 
-1. Stuur `index.html` via AirDrop naar de iPad, of mail het bestand
-   naar jezelf.
-2. Bewaar het in de Bestanden-app, bijvoorbeeld in iCloud Drive.
-3. Open het bestand. Kiest iPadOS een voorvertoning in plaats van Safari,
-   tik dan op het deelicoon en kies Safari.
+De app staat online op <https://buildinginthecloud.github.io/tafeltrainer/>.
 
-Safari wist bij lokale bestanden soms de opgeslagen scores. De app merkt dat
-en toont een waarschuwing op het startscherm; spelen blijft werken. Publiceer
-het bestand op een webadres als de scores echt moeten blijven staan.
+1. Open die link in Safari op de iPad.
+2. Tik op het deelicoon en kies "Zet op beginscherm".
+3. De app staat nu als icoon tussen de andere apps en opent schermvullend.
+
+Elk apparaat houdt zijn eigen scores bij in de browseropslag. Internet is
+alleen nodig bij het openen.
+
+Safari op iOS en iPadOS opent geen `file://`-adressen, dus een lokaal
+gekopieerd bestand komt daar niet verder dan een voorvertoning zonder
+adresbalk en zonder blijvende opslag. Gebruik de link.
+
+## Publiceren
+
+Een wijziging staat na een push naar `main` binnen een minuut of twee online:
+
+```bash
+git push
+```
 
 ## Controleren na een wijziging
 
