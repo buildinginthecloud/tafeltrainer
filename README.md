@@ -1,7 +1,8 @@
 # Tafeltrainer
 
-Oefen- en toetsapp voor de tafels van 1 tot en met 10. Eén HTML-bestand,
-geen internet nodig, scores blijven lokaal in de browser.
+Oefen- en toetsapp voor de tafels van 1 tot en met 10. Eén HTML-bestand
+zonder afhankelijkheden, gepubliceerd via GitHub Pages. Scores blijven per
+apparaat in de browseropslag staan.
 
 ## Onderdelen
 
